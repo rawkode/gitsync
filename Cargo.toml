@@ -5,6 +5,7 @@ authors = ["David McKay <david@rawkode.com>"]
 edition = "2018"
 license = "MIT"
 description = "GitOps in Rust"
+repository = "https://gitlab.com/rawkode/gitsync"
 
 [dependencies]
 actix = "0.10.0-alpha.3"
