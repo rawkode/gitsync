@@ -3,6 +3,8 @@ name = "gitsync"
 version = "0.1.0"
 authors = ["David McKay <david@rawkode.com>"]
 edition = "2018"
+license = "MIT"
+description = "GitOps in Rust"
 
 [dependencies]
 actix = "0.10.0-alpha.3"
