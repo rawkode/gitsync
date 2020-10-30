@@ -4,7 +4,7 @@ version = "0.1.2"
 authors = ["David McKay <david@rawkode.com>"]
 edition = "2018"
 license = "MIT"
-description = "GitOps in Rust"
+description = "Library that facilitates monitoring Git repositories for changes. Could enable GitOps"
 repository = "https://gitlab.com/rawkode/gitsync"
 
 [dependencies]
@@ -15,3 +15,12 @@ futures = "0.3"
 git2 = "0.13.8"
 log = "0.4.0"
 tempdir = "0.3.7"
+
+[dev-dependencies]
+futures = { version = "0.3" }
+cucumber = { package = "cucumber_rust", version = "^0.7.0" }
+async-trait = "0.1.41"
+
+[[test]]
+name = "cucumber"
+harness = false
