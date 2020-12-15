@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use tempdir::TempDir;
 
 pub struct CucumberState {
+    sync: Option<gitsync::GitSync>,
     dir: PathBuf,
 }
 
@@ -16,6 +17,7 @@ impl World for CucumberState {
     async fn new() -> Result<Self, Infallible> {
         Ok(Self {
             dir: TempDir::new("test").unwrap().into_path(),
+            sync: None,
         })
     }
 }
@@ -30,38 +32,38 @@ mod example_steps {
     pub fn steps() -> Steps<crate::CucumberState> {
         let mut builder: Steps<crate::CucumberState> = Steps::new();
 
-        builder
-            .given("the local directory does not exist", do_nothing)
-            .when("I sync a Git repository", sync_repository)
-            .then("the repository is cloned", |world, step| world);
+        // builder
+        //     .given("we have GitSync configured to clone itself", configure_self)
+        //     .given("the local directory does not exist", do_nothing)
+        //     .when("I sync a Git repository", sync_repository)
+        //     .then("the repository is cloned", |world, step| world);
 
         builder
     }
 
-    fn do_nothing(world: CucumberState, _step: Rc<Step>) -> CucumberState {
-        world
-    }
+    // fn do_nothing(world: CucumberState, _step: Rc<Step>) -> CucumberState {
+    //     world
+    // }
 
-    fn sync_repository(world: CucumberState, step: Rc<Step>) -> CucumberState {
-        let git_sync = gitsync::GitSync {
-            repo: String::from("https://gitlab.com/rawkode/gitsync"),
-            dir: String::from(world.dir.to_str().unwrap()),
-            sync_every: Duration::from_secs(5),
-            username: None,
-            private_key: None,
-            passphrase: None,
-        };
+    // fn configure_self(world: CucumberState, _step: Rc<Step>) -> CucumberState {
+    //     world.sync = Some(gitsync::GitSync {
+    //         repo: String::from("https://gitlab.com/rawkode/gitsync"),
+    //         dir: String::from(world.dir.to_str().unwrap()),
+    //         sync_every: Duration::from_secs(5),
+    //         username: None,
+    //         private_key: None,
+    //         passphrase: None,
+    //     });
 
-        match git_sync.clone_repository() {
-            Ok(clone) => (),
-            Err(e) => {
-                assert_eq!(false, true);
-                ()
-            }
-        }
+    //     world
+    // }
 
-        world
-    }
+    // fn sync_repository(world: CucumberState, step: Rc<Step>) -> CucumberState {
+    //     let sync = world.sync;
+    //     let result = sync.unwrap().clone_repository();
+
+    //     world
+    // }
 }
 
 fn main() {
