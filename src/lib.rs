@@ -70,7 +70,7 @@ impl GitSync {
         };
     }
 
-    fn does_clone_exist(&self) -> bool {
+    pub fn does_clone_exist(&self) -> bool {
         // If the directory doesn't exist, we're good.
         if false == Path::new(&self.dir).exists() {
             return false;
