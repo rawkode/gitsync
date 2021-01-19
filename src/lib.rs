@@ -1,19 +1,22 @@
 use git2::build::RepoBuilder;
 use git2::Repository;
 use git2::{Cred, Error, RemoteCallbacks};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 #[cfg(feature = "actix")]
 pub mod actix;
 
+// When running tests, we can just use println instead of logger
 #[cfg(not(test))]
 use log::info;
+#[cfg(test)]
+use std::println as info;
 
 #[derive(Clone, Debug)]
 pub struct GitSync {
     pub repo: String,
-    pub dir: String,
+    pub dir: PathBuf,
     pub sync_every: Duration,
     pub username: Option<String>,
     pub passphrase: Option<String>,
@@ -23,7 +26,7 @@ pub struct GitSync {
 impl GitSync {
     pub fn clone_repository(self) -> Result<Repository, Error> {
         info!(
-            "Attempting to clone {} every {} to {}",
+            "Attempting to clone {} every {} to {:?}",
             self.repo,
             self.sync_every.as_secs(),
             self.dir,
@@ -37,7 +40,7 @@ impl GitSync {
 
             callbacks.credentials(|_url, username_from_url, _allowed_types| {
                 let username = match &self.username {
-                    Some(u) => u.as_str(),
+                    Some(u) => u,
                     _ => username_from_url.unwrap(),
                 };
 
@@ -63,7 +66,7 @@ impl GitSync {
             Ok(repository) => repository,
             Err(_) => {
                 panic!(
-                    "Directory, {}, exists and is not a Git repository",
+                    "Directory, {:?}, exists and is not a Git repository",
                     &self.dir
                 );
             }
@@ -83,7 +86,7 @@ impl GitSync {
             Ok(remote) => remote,
             Err(_) => {
                 panic!(
-                    "Directory, {}, exists and is a Git repository; but not one managed by Gitsync",
+                    "Directory, {:?}, exists and is a Git repository; but not one managed by Gitsync",
                     &self.dir
                 );
             }
@@ -93,21 +96,18 @@ impl GitSync {
         match remote.url() {
             None => panic!("Not the correct remote URL"),
             Some(url) => {
-                if url.eq(&self.repo) {
+                if url.eq(self.repo.as_str()) {
                     return true;
                 }
             }
         }
 
         panic!(
-            "There is a Git repository at {}, but its remote does not match {}",
+            "There is a Git repository at {:?}, but its remote does not match {}",
             self.dir, self.repo
         );
     }
 }
-
-#[cfg(test)]
-use std::{println as info, println as error};
 
 #[cfg(test)]
 mod tests {
@@ -122,12 +122,7 @@ mod tests {
         let git_sync = GitSync {
             repo: String::from("https://gitlab.com/rawkode/gitsync"),
             sync_every: Duration::from_secs(30),
-            dir: clone_dir
-                .into_path()
-                .join("clone")
-                .into_os_string()
-                .into_string()
-                .unwrap(),
+            dir: clone_dir.into_path().join("clone-dir"),
             username: None,
             private_key: None,
             passphrase: None,
@@ -164,11 +159,7 @@ mod tests {
         let git_sync = GitSync {
             repo: String::from("https://gitlab.com/rawkode/gitsync"),
             sync_every: Duration::from_secs(30),
-            dir: clone_dir
-                .into_path()
-                .into_os_string()
-                .into_string()
-                .unwrap(),
+            dir: clone_dir.into_path(),
             username: None,
             private_key: None,
             passphrase: None,

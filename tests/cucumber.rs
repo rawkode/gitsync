@@ -1,15 +1,13 @@
 use async_trait::async_trait;
 use cucumber::World;
-use gitsync;
 use std::convert::Infallible;
 use std::path::PathBuf;
 use tempdir::TempDir;
 
 pub struct CucumberState {
-    sync: Option<gitsync::GitSync>,
-    dir: PathBuf,
+    test_dir: PathBuf,
+    clone_dir: PathBuf,
     repo_url: String,
-    clone_dir: String,
 }
 
 #[async_trait(?Send)]
@@ -18,10 +16,9 @@ impl World for CucumberState {
 
     async fn new() -> Result<Self, Infallible> {
         Ok(Self {
-            dir: TempDir::new("test").unwrap().into_path(),
-            sync: None,
+            test_dir: TempDir::new("gitsync-test-").unwrap().into_path(),
             repo_url: String::from(""),
-            clone_dir: String::from(""),
+            clone_dir: PathBuf::new(),
         })
     }
 }
@@ -60,11 +57,11 @@ mod example_steps {
         matches: Vec<String>,
         _step: Rc<Step>,
     ) -> CucumberState {
-        let path: &String = matches.first().unwrap();
+        let path: PathBuf = PathBuf::from(&world.test_dir).join(matches.get(1).unwrap());
 
-        assert_eq!(false, PathBuf::from(&world.dir).join(&path).exists());
+        assert_eq!(false, path.exists());
 
-        world.clone_dir = path.clone();
+        world.clone_dir = path;
 
         world
     }
@@ -74,7 +71,7 @@ mod example_steps {
         matches: Vec<String>,
         _step: Rc<Step>,
     ) -> CucumberState {
-        let repo_url: &String = matches.first().unwrap();
+        let repo_url = matches.get(1).unwrap().clone();
 
         let gitsync = gitsync::GitSync {
             repo: repo_url.clone(),
@@ -85,9 +82,11 @@ mod example_steps {
             passphrase: None,
         };
 
-        gitsync.clone_repository();
+        gitsync
+            .clone_repository()
+            .expect("Failed to clone repository");
 
-        world.repo_url = repo_url.clone();
+        world.repo_url = repo_url;
 
         world
     }
@@ -97,8 +96,8 @@ mod example_steps {
         _matches: Vec<String>,
         _step: Rc<Step>,
     ) -> CucumberState {
-        let repo_url: &String = &world.repo_url;
-        let clone_dir: &String = &world.clone_dir;
+        let repo_url: &str = world.repo_url.as_str();
+        let clone_dir: PathBuf = world.clone_dir.clone();
 
         let output = std::process::Command::new("git")
             .current_dir(PathBuf::from(clone_dir))
@@ -115,26 +114,6 @@ mod example_steps {
 
         world
     }
-
-    // fn configure_self(world: CucumberState, _step: Rc<Step>) -> CucumberState {
-    //     world.sync = Some(gitsync::GitSync {
-    //         repo: String::from("https://gitlab.com/rawkode/gitsync"),
-    //         dir: String::from(world.dir.to_str().unwrap()),
-    //         sync_every: Duration::from_secs(5),
-    //         username: None,
-    //         private_key: None,
-    //         passphrase: None,
-    //     });
-
-    //     world
-    // }
-
-    // fn sync_repository(world: CucumberState, step: Rc<Step>) -> CucumberState {
-    //     let sync = world.sync;
-    //     let result = sync.unwrap().clone_repository();
-
-    //     world
-    // }
 }
 
 fn main() {
