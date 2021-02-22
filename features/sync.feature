@@ -1,10 +1,8 @@
-@NotImplemented
 Feature: Bootstrap Git Repository
 
     GitSync expects to clone a directory to a new directory
     but we have rules for some existing dirs
 
-    @CLI
     Example: No local directory
 
         Given I have no directory called "gitsync"
@@ -12,7 +10,6 @@ Feature: Bootstrap Git Repository
         Then the repository is cloned into the "gitsync" directory
         And the sync completes
 
-    @CLI
     Example: Local directory isn't a Git repository
 
         Given I have a non-empty directory called "gitsync"
