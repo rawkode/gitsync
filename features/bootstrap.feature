@@ -16,7 +16,7 @@ Feature: Bootstrap
         And it contains a file called "random.txt"
         When I bootstrap the "https://gitlab.com/rawkode/gitsync" repository
         Then the directory is left untouched
-        And the bootstrap errors
+        And the bootstrap errors because "local dir isn't git repository"
 
     Rule: If we have a local clone the origin remote must be correct
 
@@ -26,7 +26,7 @@ Feature: Bootstrap
             But it has a remote called "origin" that points to "https://gitlab.com/rawkode/dotfiles"
             When I bootstrap the "https://gitlab.com/rawkode/gitsync" repository
             Then the directory is left untouched
-            And the bootstrap errors
+            And the bootstrap errors because "incorrect remote"
 
         Example: Local clone has no remote called "origin"
 
@@ -34,7 +34,7 @@ Feature: Bootstrap
             But it has no remote called "origin"
             When I bootstrap the "https://gitlab.com/rawkode/gitsync" repository
             Then the directory is left untouched
-            And the bootstrap errors
+            And the bootstrap errors because "incorrect remote"
 
 
         Example: Local clone has the correct origin remote

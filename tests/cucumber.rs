@@ -34,6 +34,7 @@ mod example_steps {
     use crate::CucumberState;
     use cucumber::gherkin::Step;
     use cucumber::Steps;
+    use gitsync::errors;
     use std::time::Duration;
     use std::{path::PathBuf, rc::Rc};
 
@@ -66,7 +67,11 @@ mod example_steps {
             )
             .then("the directory is left untouched", directory_left_untouched)
             .then("the bootstrap completes", bootstrap_is_ok)
-            .then("the bootstrap errors", bootstrap_errors);
+            .then("the bootstrap errors", bootstrap_errors)
+            .then_regex(
+                r#"the bootstrap errors because "(.*)"$"#,
+                bootstrap_errors_because,
+            );
 
         builder
     }
@@ -89,6 +94,28 @@ mod example_steps {
 
     fn bootstrap_errors(world: CucumberState, _step: Rc<Step>) -> CucumberState {
         assert_eq!(true, world.sync_error.is_some());
+
+        world
+    }
+
+    fn bootstrap_errors_because(
+        world: CucumberState,
+        matches: Vec<String>,
+        _step: Rc<Step>,
+    ) -> CucumberState {
+        assert_eq!(true, world.sync_error.is_some());
+
+        let w = world.sync_error.as_ref().clone().unwrap();
+
+        match matches.get(1).unwrap().as_str() {
+            "local dir isn't git repository" => {
+                assert!(matches!(w, errors::GitSyncError::Git2Error { .. }))
+            }
+            "incorrect remote" => {
+                assert!(matches!(w, errors::GitSyncError::IncorrectGitRemotes { .. }))
+            }
+            _ => assert_eq!(true, false),
+        };
 
         world
     }
