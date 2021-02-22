@@ -30,7 +30,7 @@ impl World for CucumberState {
     }
 }
 
-mod example_steps {
+mod bootstrap_steps {
     use crate::CucumberState;
     use cucumber::gherkin::Step;
     use cucumber::Steps;
@@ -85,8 +85,6 @@ mod example_steps {
     }
 
     fn bootstrap_is_ok(world: CucumberState, _step: Rc<Step>) -> CucumberState {
-        print!("Error: {:?}", world.sync_error);
-
         assert_eq!(true, world.sync_error.is_none());
 
         world
@@ -269,7 +267,7 @@ mod example_steps {
 fn main() {
     let runner = cucumber::Cucumber::<CucumberState>::new()
         .features(&["./features"])
-        .steps(example_steps::steps());
+        .steps(bootstrap_steps::steps());
 
     futures::executor::block_on(runner.run());
 }
