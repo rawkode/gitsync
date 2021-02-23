@@ -7,33 +7,6 @@ use crate::MyWorld;
 #[given(regex = r#"it has no remote called "(\S+)"$"#)]
 fn do_nothing_regex(_: &mut MyWorld, _remote_name: String) {}
 
-#[then("the bootstrap completes")]
-fn bootstrap_is_ok(world: &mut MyWorld) {
-    assert_eq!(true, world.sync_error.is_none());
-}
-
-#[then("the bootstrap errors")]
-fn bootstrap_errors(world: &mut MyWorld) {
-    assert_eq!(true, world.sync_error.is_some());
-}
-
-#[then(regex = r#"the bootstrap errors because "(.*)"$"#)]
-fn bootstrap_errors_because(world: &mut MyWorld, error: String) {
-    assert_eq!(true, world.sync_error.is_some());
-
-    let w = world.sync_error.as_ref().clone().unwrap();
-
-    match error.as_ref() {
-        "local dir isn't git repository" => {
-            assert!(matches!(w, errors::GitSyncError::Git2Error { .. }))
-        }
-        "incorrect remote" => {
-            assert!(matches!(w, errors::GitSyncError::IncorrectGitRemotes { .. }))
-        }
-        _ => assert_eq!(true, false),
-    };
-}
-
 #[given(regex = r#"I have no directory called "(\S+)"$"#)]
 fn i_have_no_directory(world: &mut MyWorld, directory: String) {
     let path: PathBuf = PathBuf::from(&world.test_dir).join(directory);
@@ -137,4 +110,31 @@ fn directory_left_untouched(world: &mut MyWorld) {
     world.created_files.iter().for_each(|f| {
         assert_eq!(true, world.clone_dir.join(f).is_file());
     });
+}
+
+#[then("the bootstrap completes")]
+fn bootstrap_is_ok(world: &mut MyWorld) {
+    assert_eq!(true, world.sync_error.is_none());
+}
+
+#[then("the bootstrap errors")]
+fn bootstrap_errors(world: &mut MyWorld) {
+    assert_eq!(true, world.sync_error.is_some());
+}
+
+#[then(regex = r#"the bootstrap errors because "(.*)"$"#)]
+fn bootstrap_errors_because(world: &mut MyWorld, error: String) {
+    assert_eq!(true, world.sync_error.is_some());
+
+    let w = world.sync_error.as_ref().clone().unwrap();
+
+    match error.as_ref() {
+        "local dir isn't git repository" => {
+            assert!(matches!(w, errors::GitSyncError::Git2Error { .. }))
+        }
+        "incorrect remote" => {
+            assert!(matches!(w, errors::GitSyncError::IncorrectGitRemotes { .. }))
+        }
+        _ => assert_eq!(true, false),
+    };
 }
