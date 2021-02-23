@@ -80,7 +80,7 @@ impl GitSync {
         let repository = Repository::open(&self.dir)?;
         let remote = match repository.find_remote("origin") {
             Ok(remote) => remote,
-            Err(e) => {
+            Err(_) => {
                 return Err(errors::GitSyncError::IncorrectGitRemotes {
                     dir: self.dir.clone(),
                     actual: String::from("No origin remote"),
