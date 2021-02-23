@@ -7,7 +7,7 @@ Feature: Bootstrap
 
         Given I have no directory called "gitsync"
         When I bootstrap the "https://gitlab.com/rawkode/gitsync" repository
-        Then the repository is cloned into the "gitsync" directory
+        Then the repository is cloned
         And the bootstrap completes
 
     Example: Local directory isn't a Git repository

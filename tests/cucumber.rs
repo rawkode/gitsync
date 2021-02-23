@@ -1,14 +1,13 @@
-use async_trait::async_trait;
-use cucumber::World;
+use cucumber_rust::{async_trait, World, WorldInit};
 use gitsync::errors;
 use std::convert::Infallible;
 use std::path::PathBuf;
 use tempdir::TempDir;
 
 mod steps;
-use steps::bootstrap;
 
-pub struct CucumberState {
+#[derive(WorldInit)]
+pub struct MyWorld {
     test_dir: PathBuf,
     clone_dir: PathBuf,
     repo_url: String,
@@ -17,7 +16,7 @@ pub struct CucumberState {
 }
 
 #[async_trait(?Send)]
-impl World for CucumberState {
+impl World for MyWorld {
     type Error = Infallible;
 
     async fn new() -> Result<Self, Infallible> {
@@ -33,10 +32,8 @@ impl World for CucumberState {
     }
 }
 
-fn main() {
-    let runner = cucumber::Cucumber::<CucumberState>::new()
-        .features(&["./features"])
-        .steps(bootstrap::steps());
-
-    futures::executor::block_on(runner.run());
+#[tokio::main]
+async fn main() {
+    let runner = MyWorld::init(&["./features"]);
+    runner.run_and_exit().await;
 }

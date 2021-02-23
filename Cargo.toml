@@ -17,9 +17,10 @@ log = "0.4.0"
 tempdir = "0.3.7"
 
 [dev-dependencies]
-futures = { version = "0.3" }
-cucumber = { package = "cucumber_rust", version = "^0.7.0" }
 async-trait = "0.1.41"
+cucumber_rust = { version = "0.8.4", features = ["macros"] }
+futures = { version = "0.3" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [[test]]
 name = "cucumber"
