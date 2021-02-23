@@ -36,6 +36,10 @@ impl GitSync {
         return Ok(());
     }
 
+    pub fn sync(self) -> Result<(), errors::GitSyncError> {
+        return Ok(());
+    }
+
     fn clone_repository(self) -> Result<(), errors::GitSyncError> {
         info!("Attempting to clone {} to {:?}", self.repo, self.dir,);
 

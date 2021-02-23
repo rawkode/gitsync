@@ -5,7 +5,7 @@ Feature: Sync
 
     Example: No Remote Changes
 
-        Given I have a local clone
+        Given I have a Git repository in a directory called "gitsync"
         And there are no remote changes
-        When I fetch from the remote
-        Then there are no changes to merge
+        When I sync
+        Then there is no change

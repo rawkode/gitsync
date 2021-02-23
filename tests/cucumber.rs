@@ -11,6 +11,7 @@ pub struct MyWorld {
     test_dir: PathBuf,
     clone_dir: PathBuf,
     repo_url: String,
+    current_commit_hash: Vec<u8>,
     sync_error: Option<errors::GitSyncError>,
     created_files: Vec<String>,
 }
@@ -26,6 +27,7 @@ impl World for MyWorld {
             test_dir: path,
             repo_url: String::from(""),
             clone_dir: PathBuf::new(),
+            current_commit_hash: vec![],
             sync_error: None,
             created_files: vec![],
         })
