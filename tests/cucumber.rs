@@ -9,6 +9,7 @@ mod steps;
 #[derive(WorldInit)]
 pub struct MyWorld {
     test_dir: PathBuf,
+    bare_dir: PathBuf,
     clone_dir: PathBuf,
     repo_url: String,
     current_commit_hash: Vec<u8>,
@@ -24,9 +25,10 @@ impl World for MyWorld {
         let path = TempDir::new("gitsync-test").unwrap().into_path();
 
         Ok(Self {
-            test_dir: path,
+            test_dir: path.clone(),
             repo_url: String::from(""),
-            clone_dir: PathBuf::new(),
+            bare_dir: path.clone().join("bare"),
+            clone_dir: path.clone().join("clone"),
             current_commit_hash: vec![],
             sync_error: None,
             created_files: vec![],
@@ -36,6 +38,9 @@ impl World for MyWorld {
 
 #[tokio::main]
 async fn main() {
-    let runner = MyWorld::init(&["./features"]);
-    runner.run_and_exit().await;
+    MyWorld::init(&["./features"])
+        .enable_capture(true)
+        .cli()
+        .run_and_exit()
+        .await;
 }
