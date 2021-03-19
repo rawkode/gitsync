@@ -1,10 +1,18 @@
 use cucumber_rust::{given, then, when};
-use std::time::Duration;
 
 use crate::MyWorld;
 
 #[given("there are remote changes")]
 fn remote_changes(world: &mut MyWorld) {
+    let output = std::process::Command::new("git")
+        .current_dir(&world.clone_dir)
+        .arg("rev-parse")
+        .arg("HEAD")
+        .output()
+        .expect("Failed to get current commit hash");
+
+    world.latest_commit_hash = output.stdout;
+
     std::process::Command::new("git")
         .current_dir(&world.clone_dir)
         .args(vec!["reset", "--hard", "HEAD^1"])
@@ -38,11 +46,7 @@ fn sync(world: &mut MyWorld) {
     let gitsync = gitsync::GitSync {
         repo: world.repo_url.clone(),
         dir: world.clone_dir.clone(),
-        branch: String::from("master"),
-        sync_every: Duration::from_secs(30),
-        username: None,
-        private_key: None,
-        passphrase: None,
+        ..Default::default()
     };
 
     let sync_error = match gitsync.sync() {
@@ -74,7 +78,8 @@ fn there_are_changes(world: &mut MyWorld) {
         .output()
         .expect("Failed to get current commit hash");
 
-    assert_ne!(world.current_commit_hash, output.stdout);
+    assert_ne!(world.latest_commit_hash, world.current_commit_hash);
+    assert_eq!(world.latest_commit_hash, output.stdout);
 }
 
 #[then("the sync completes")]

@@ -1,6 +1,6 @@
 use cucumber_rust::{given, then, when};
 use gitsync::errors;
-use std::{path::PathBuf, time::Duration};
+use std::path::PathBuf;
 
 use crate::MyWorld;
 
@@ -82,11 +82,7 @@ fn bootstrap_git_repository(world: &mut MyWorld) {
     let gitsync = gitsync::GitSync {
         repo: String::from(world.bare_dir.clone().to_str().unwrap()),
         dir: world.clone_dir.clone(),
-        branch: String::from("master"),
-        sync_every: Duration::from_secs(30),
-        username: None,
-        private_key: None,
-        passphrase: None,
+        ..Default::default()
     };
 
     let sync_error = match gitsync.bootstrap() {

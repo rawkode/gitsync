@@ -3,7 +3,6 @@ use git2::build::RepoBuilder;
 use git2::{Cred, RemoteCallbacks};
 use git2::{Repository, StatusOptions};
 use std::path::{Path, PathBuf};
-use std::time::Duration;
 
 // #[cfg(feature = "actix")]
 // pub mod actix;
@@ -16,12 +15,12 @@ use log::info;
 #[cfg(test)]
 use std::println as info;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct GitSync {
     pub repo: String,
-    pub branch: String,
     pub dir: PathBuf,
-    pub sync_every: Duration,
+
+    pub branch: Option<String>,
     pub username: Option<String>,
     pub passphrase: Option<String>,
     pub private_key: Option<String>,
@@ -87,9 +86,9 @@ impl GitSync {
 
         let repository: Repository = Repository::open(&self.dir)?;
         let mut remote = repository.find_remote("origin")?;
-        remote.fetch(&[&self.branch], Some(&mut fetch_options), None)?;
+        remote.fetch(&["HEAD"], Some(&mut fetch_options), None)?;
 
-        let fetch_head = repository.find_reference("FETCH_HEAD")?;
+        let mut fetch_head = repository.find_reference("FETCH_HEAD")?;
         let fetch_commit = repository.reference_to_annotated_commit(&&fetch_head)?;
         let analysis = repository.merge_analysis(&[&fetch_commit])?;
 
@@ -102,36 +101,24 @@ impl GitSync {
             return Err(GitSyncError::FastForwardMergeNotPossible);
         }
 
-        let refname = format!("refs/heads/{}", &self.branch);
-
-        match repository.find_reference(&refname) {
-            Ok(mut r) => {
-                // fast_forward(repo, &mut r, &fetch_commit)?;
-                let name = match r.name() {
-                    Some(s) => s.to_string(),
-                    None => String::from_utf8_lossy(r.name_bytes()).to_string(),
-                };
-
-                let msg = format!(
-                    "Fast-Forward: Setting {} to id: {}",
-                    name,
-                    fetch_commit.id()
-                );
-
-                r.set_target(fetch_commit.id(), &msg)?;
-                repository.set_head(&name)?;
-                repository.checkout_head(Some(
-                    git2::build::CheckoutBuilder::default()
-                        // For some reason the force is required to make the working directory actually get updated
-                        // I suspect we should be adding some logic to handle dirty working directory states
-                        // but this is just an example so maybe not.
-                        .force(),
-                ))?;
-            }
-            Err(_) => {
-                return Err(GitSyncError::FastForwardMergeNotPossible);
-            }
+        let name = match fetch_head.name() {
+            Some(s) => s.to_string(),
+            None => String::from_utf8_lossy(fetch_head.name_bytes()).to_string(),
         };
+
+        fetch_head.set_target(
+            fetch_commit.id(),
+            format!("fast-forward from {} to {}", name, fetch_commit.id()).as_str(),
+        )?;
+
+        repository.set_head(&name)?;
+        repository.checkout_head(Some(
+            git2::build::CheckoutBuilder::default()
+                // For some reason the force is required to make the working directory actually get updated
+                // I suspect we should be adding some logic to handle dirty working directory states
+                // but this is just an example so maybe not.
+                .force(),
+        ))?;
 
         return Ok(());
     }
