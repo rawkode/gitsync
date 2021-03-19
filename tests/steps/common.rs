@@ -5,21 +5,6 @@ use crate::MyWorld;
 
 #[given("I have a remote Git repository available")]
 fn i_have_a_remote_git_repository(world: &mut MyWorld) {
-    std::process::Command::new("git")
-        .args(vec![
-            "config",
-            "--global",
-            "user.email",
-            "example@example.com",
-        ])
-        .status()
-        .expect("Failed to initialise bare repository");
-
-    std::process::Command::new("git")
-        .args(vec!["config", "--global", "user.name", "Example"])
-        .status()
-        .expect("Failed to initialise bare repository");
-
     // --initial-branch doesn't work
     let output = std::process::Command::new("git")
         .args(vec!["init", "--bare"])
@@ -55,7 +40,13 @@ fn i_have_a_remote_git_repository(world: &mut MyWorld) {
 
     let output = std::process::Command::new("git")
         .current_dir(&path)
-        .args(vec!["commit", "-m", "1"])
+        .args(vec![
+            "commit",
+            "-m",
+            "1",
+            "--author",
+            "Example <example@example.com>",
+        ])
         .output()
         .expect("Failed to commit first file");
 
