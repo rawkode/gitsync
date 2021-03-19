@@ -1,5 +1,5 @@
 use errors::GitSyncError;
-use git2::{build::RepoBuilder, ResetType};
+use git2::build::RepoBuilder;
 use git2::{Cred, RemoteCallbacks};
 use git2::{Repository, StatusOptions};
 use std::path::{Path, PathBuf};
@@ -27,7 +27,7 @@ pub struct GitSync {
 }
 
 impl GitSync {
-    pub fn bootstrap(self) -> Result<(), errors::GitSyncError> {
+    pub fn bootstrap(&self) -> Result<(), errors::GitSyncError> {
         if true == self.does_clone_exist()? {
             return Ok(());
         }
@@ -127,7 +127,7 @@ impl GitSync {
                         .force(),
                 ))?;
             }
-            Err(e) => {
+            Err(_) => {
                 return Err(GitSyncError::FastForwardMergeNotPossible);
             }
         };
@@ -135,7 +135,7 @@ impl GitSync {
         return Ok(());
     }
 
-    fn clone_repository(self) -> Result<(), errors::GitSyncError> {
+    fn clone_repository(&self) -> Result<(), errors::GitSyncError> {
         info!("Attempting to clone {} to {:?}", self.repo, self.dir,);
 
         let mut fetch_options = git2::FetchOptions::new();
