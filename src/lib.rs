@@ -1,6 +1,7 @@
-use git2::build::RepoBuilder;
-use git2::Repository;
+use errors::GitSyncError;
+use git2::{build::RepoBuilder, ResetType};
 use git2::{Cred, RemoteCallbacks};
+use git2::{Repository, StatusOptions};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -36,7 +37,101 @@ impl GitSync {
         return Ok(());
     }
 
-    pub fn sync(self) -> Result<(), errors::GitSyncError> {
+    fn check_worktree_is_clean(&self) -> bool {
+        let mut opts = StatusOptions::new();
+        opts.include_ignored(false);
+        opts.include_untracked(true);
+
+        let repository = match Repository::open(self.dir.clone()) {
+            Ok(repository) => repository,
+            Err(_) => {
+                return false;
+            }
+        };
+
+        let clean = match repository.statuses(Some(&mut opts)) {
+            Ok(status) => status.is_empty(),
+            Err(_) => false,
+        };
+
+        clean
+    }
+
+    pub fn sync(&self) -> Result<(), errors::GitSyncError> {
+        if !self.check_worktree_is_clean() {
+            return Err(GitSyncError::WorkTreeNotClean);
+        }
+
+        let mut fetch_options = git2::FetchOptions::new();
+
+        if self.private_key.is_some() {
+            let mut callbacks = RemoteCallbacks::new();
+
+            callbacks.credentials(|_url, username_from_url, _allowed_types| {
+                let username = match &self.username {
+                    Some(u) => u,
+                    _ => username_from_url.unwrap(),
+                };
+
+                Cred::ssh_key(
+                    username,
+                    None,
+                    std::path::Path::new(&self.private_key.clone().unwrap()),
+                    self.passphrase.as_deref(),
+                )
+            });
+
+            fetch_options.remote_callbacks(callbacks);
+        }
+
+        let repository: Repository = Repository::open(&self.dir)?;
+        let mut remote = repository.find_remote("origin")?;
+        remote.fetch(&["master"], Some(&mut fetch_options), None)?;
+
+        let fetch_head = repository.find_reference("FETCH_HEAD")?;
+        let fetch_commit = repository.reference_to_annotated_commit(&&fetch_head)?;
+        let analysis = repository.merge_analysis(&[&fetch_commit])?;
+
+        if analysis.0.is_up_to_date() {
+            return Ok(());
+        }
+
+        // We only support fast forward merges for now
+        if !analysis.0.is_fast_forward() {
+            return Err(GitSyncError::FastForwardMergeNotPossible);
+        }
+
+        let refname = format!("refs/heads/master");
+
+        match repository.find_reference(&refname) {
+            Ok(mut r) => {
+                // fast_forward(repo, &mut r, &fetch_commit)?;
+                let name = match r.name() {
+                    Some(s) => s.to_string(),
+                    None => String::from_utf8_lossy(r.name_bytes()).to_string(),
+                };
+
+                let msg = format!(
+                    "Fast-Forward: Setting {} to id: {}",
+                    name,
+                    fetch_commit.id()
+                );
+
+                r.set_target(fetch_commit.id(), &msg)?;
+                repository.set_head(&name)?;
+                repository.checkout_head(Some(
+                    git2::build::CheckoutBuilder::default()
+                        // For some reason the force is required to make the working directory actually get updated
+                        // I suspect we should be adding some logic to handle dirty working directory states
+                        // but this is just an example so maybe not.
+                        .force(),
+                ))?;
+            }
+            Err(e) => {
+                return Err(GitSyncError::FastForwardMergeNotPossible);
+            }
+        };
+
         return Ok(());
     }
 

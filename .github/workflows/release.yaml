@@ -1,0 +1,96 @@
+# Borrowed from https://raw.githubusercontent.com/sharkdp/bat/master/.github/workflows/CICD.yml
+name: release
+
+env:
+    MIN_SUPPORTED_RUST_VERSION: "1.45.0"
+    CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
+
+on:
+    push:
+        branches:
+            - "main"
+        tags:
+            - "*"
+
+jobs:
+    lint:
+        runs-on: ubuntu-20.04
+        steps:
+            - name: Git checkout
+              uses: actions/checkout@v2
+            - name: Install rust toolchain (v${{ env.MIN_SUPPORTED_RUST_VERSION }})
+              uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: ${{ env.MIN_SUPPORTED_RUST_VERSION }}
+                  default: true
+                  profile: minimal
+                  components: clippy
+            - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
+              uses: actions-rs/cargo@v1
+              with:
+                  command: clippy
+                  args: --all-targets --all-features
+            - name: Run tests
+              uses: actions-rs/cargo@v1
+              with:
+                  command: test
+            - name: Run cargo-tarpaulin
+              uses: actions-rs/tarpaulin@v0.1
+              with:
+                  version: "0.15.0"
+
+            - name: Upload to codecov.io
+              uses: codecov/codecov-action@v1.0.2
+              with:
+                  token: ${{secrets.CODECOV_TOKEN}}
+
+    build:
+        name: ${{ matrix.job.os }} (${{ matrix.job.target }})
+        runs-on: ${{ matrix.job.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                job:
+                    - { os: ubuntu-20.04, target: x86_64-unknown-linux-gnu }
+                    - { os: macos-10.15, target: x86_64-apple-darwin }
+                    - { os: windows-2019, target: x86_64-pc-windows-gnu }
+        steps:
+            - name: Checkout source code
+              uses: actions/checkout@v2
+
+            - name: Install Rust toolchain
+              uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: stable
+                  target: ${{ matrix.job.target }}
+                  override: true
+                  profile: minimal
+
+            - name: Run tests
+              uses: actions-rs/cargo@v1
+              with:
+                  use-cross: ${{ matrix.job.use-cross }}
+                  command: test
+                  args: --target=${{ matrix.job.target }}
+
+    release:
+        if: startsWith(github.ref, 'refs/tags/')
+        runs-on: ubuntu-20.04
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+
+            - name: Conventional Changelog Action
+              id: changelog
+              uses: TriPSs/conventional-changelog-action@v3
+              with:
+                  github-token: ${{ secrets.github_token }}
+                  output-file: "false"
+
+            - name: Update Release with Changelog
+              uses: softprops/action-gh-release@v1
+              with:
+                  body: |
+                      ${{steps.changelog.outputs.clean_changelog}}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

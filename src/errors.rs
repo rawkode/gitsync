@@ -6,6 +6,8 @@ pub enum GitSyncError {
         expected: String,
         actual: String,
     },
+    WorkTreeNotClean,
+    FastForwardMergeNotPossible,
     Git2Error {
         error: git2::Error,
     },
@@ -21,6 +23,14 @@ impl fmt::Debug for GitSyncError {
             } => {
                 write!(f, "A directory already exists at {} and is a Git repository, but we expected the remote to be {} and got {}.",
                 dir.to_str().unwrap(), expected, actual)
+            }
+
+            GitSyncError::FastForwardMergeNotPossible => {
+                write!(f, "Can't fast-forward merge")
+            }
+
+            GitSyncError::WorkTreeNotClean => {
+                write!(f, "The worktree isn't clean. Refusing to sync")
             }
 
             GitSyncError::Git2Error { error } => {

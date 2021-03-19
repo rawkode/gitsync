@@ -5,7 +5,15 @@ use std::{path::PathBuf, time::Duration};
 use crate::MyWorld;
 
 #[given(regex = r#"it has no remote called "(\S+)"$"#)]
-fn do_nothing_regex(_: &mut MyWorld, _remote_name: String) {}
+fn ensure_no_git_remote_called(world: &mut MyWorld, remote_name: String) {
+    std::process::Command::new("git")
+        .current_dir(&world.clone_dir)
+        .arg("remote")
+        .arg("remove")
+        .arg(&remote_name)
+        .status()
+        .expect(format!("Failed to ensure no remote was called {}", remote_name).as_str());
+}
 
 #[given(regex = r#"I have no directory called "(\S+)"$"#)]
 fn i_have_no_directory(world: &mut MyWorld, directory: String) {
@@ -40,7 +48,8 @@ fn it_has_remote(world: &mut MyWorld, name: String, url: String) {
     let output = std::process::Command::new("git")
         .current_dir(&world.clone_dir)
         .arg("remote")
-        .arg("add")
+        .arg("set-url")
+        .arg("--add")
         .arg(&name)
         .arg(&url)
         .status()
@@ -49,18 +58,35 @@ fn it_has_remote(world: &mut MyWorld, name: String, url: String) {
     assert_eq!(true, output.success());
 }
 
-#[when(regex = r#"I bootstrap the "([^"]+)"#)]
-fn bootstrap_git_repository(world: &mut MyWorld, repo: String) {
+#[given(regex = r#"it has a correctly configured remote called "(\S+)""#)]
+fn it_has_remote_correctly_configured(world: &mut MyWorld, name: String) {
+    let output = std::process::Command::new("git")
+        .current_dir(&world.clone_dir)
+        .arg("remote")
+        .arg("set-url")
+        .arg("--add")
+        .arg(&name)
+        .arg(world.bare_dir.to_str().unwrap())
+        .status()
+        .expect("Failed to add remote to test repository");
+
+    assert_eq!(true, output.success());
+}
+
+#[when("I bootstrap")]
+fn bootstrap_git_repository(world: &mut MyWorld) {
+    // When we "bootstrap" with no args, this uses the background
+    // context that sets up a local bare repository
+    world.repo_url = String::from(world.bare_dir.to_str().unwrap());
+
     let gitsync = gitsync::GitSync {
-        repo: repo.clone(),
+        repo: String::from(world.bare_dir.clone().to_str().unwrap()),
         dir: world.clone_dir.clone(),
         sync_every: Duration::from_secs(30),
         username: None,
         private_key: None,
         passphrase: None,
     };
-
-    world.repo_url = repo;
 
     let sync_error = match gitsync.bootstrap() {
         Ok(_) => None,
@@ -118,7 +144,10 @@ fn bootstrap_errors_because(world: &mut MyWorld, error: String) {
             assert!(matches!(w, errors::GitSyncError::Git2Error { .. }))
         }
         "incorrect remote" => {
-            assert!(matches!(w, errors::GitSyncError::IncorrectGitRemotes { .. }))
+            assert!(matches!(
+                w,
+                errors::GitSyncError::IncorrectGitRemotes { .. }
+            ))
         }
         _ => assert_eq!(true, false),
     };
