@@ -82,6 +82,7 @@ fn bootstrap_git_repository(world: &mut MyWorld) {
     let gitsync = gitsync::GitSync {
         repo: String::from(world.bare_dir.clone().to_str().unwrap()),
         dir: world.clone_dir.clone(),
+        branch: String::from("master"),
         sync_every: Duration::from_secs(30),
         username: None,
         private_key: None,

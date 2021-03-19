@@ -19,6 +19,7 @@ use std::println as info;
 #[derive(Clone, Debug)]
 pub struct GitSync {
     pub repo: String,
+    pub branch: String,
     pub dir: PathBuf,
     pub sync_every: Duration,
     pub username: Option<String>,
@@ -86,7 +87,7 @@ impl GitSync {
 
         let repository: Repository = Repository::open(&self.dir)?;
         let mut remote = repository.find_remote("origin")?;
-        remote.fetch(&["master"], Some(&mut fetch_options), None)?;
+        remote.fetch(&[&self.branch], Some(&mut fetch_options), None)?;
 
         let fetch_head = repository.find_reference("FETCH_HEAD")?;
         let fetch_commit = repository.reference_to_annotated_commit(&&fetch_head)?;
@@ -101,7 +102,7 @@ impl GitSync {
             return Err(GitSyncError::FastForwardMergeNotPossible);
         }
 
-        let refname = format!("refs/heads/master");
+        let refname = format!("refs/heads/{}", &self.branch);
 
         match repository.find_reference(&refname) {
             Ok(mut r) => {

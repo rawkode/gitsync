@@ -38,6 +38,7 @@ fn sync(world: &mut MyWorld) {
     let gitsync = gitsync::GitSync {
         repo: world.repo_url.clone(),
         dir: world.clone_dir.clone(),
+        branch: String::from("master"),
         sync_every: Duration::from_secs(30),
         username: None,
         private_key: None,
