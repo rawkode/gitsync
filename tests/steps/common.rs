@@ -5,7 +5,7 @@ use crate::MyWorld;
 
 #[given("I have a remote Git repository available")]
 fn i_have_a_remote_git_repository(world: &mut MyWorld) {
-    // --initial-branch doesn't work
+    // --initial-branch=main doesn't work on older Gits
     let output = std::process::Command::new("git")
         .args(vec!["init", "--bare"])
         .arg(&world.bare_dir)
@@ -28,6 +28,22 @@ fn i_have_a_remote_git_repository(world: &mut MyWorld) {
 
     assert_eq!(true, output.status.success());
 
+    let output = std::process::Command::new("git")
+        .current_dir(&path)
+        .args(vec!["config", "user.name", "Example Author"])
+        .output()
+        .expect("Failed to add first file");
+
+    assert_eq!(true, output.status.success());
+
+    let output = std::process::Command::new("git")
+        .current_dir(&path)
+        .args(vec!["config", "user.email", "example@example.com"])
+        .output()
+        .expect("Failed to add first file");
+
+    assert_eq!(true, output.status.success());
+
     std::fs::write(path.join("file"), "1").expect("Failed to write file to repository");
 
     let output = std::process::Command::new("git")
@@ -40,13 +56,7 @@ fn i_have_a_remote_git_repository(world: &mut MyWorld) {
 
     let output = std::process::Command::new("git")
         .current_dir(&path)
-        .args(vec![
-            "commit",
-            "-m",
-            "1",
-            "--author",
-            "Example <example@example.com>",
-        ])
+        .args(vec!["commit", "-m", "1"])
         .output()
         .expect("Failed to commit first file");
 
