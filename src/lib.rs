@@ -28,13 +28,13 @@ pub struct GitSync {
 
 impl GitSync {
     pub fn bootstrap(&self) -> Result<(), errors::GitSyncError> {
-        if true == self.does_clone_exist()? {
+        if self.does_clone_exist()? {
             return Ok(());
         }
 
         self.clone_repository()?;
 
-        return Ok(());
+        Ok(())
     }
 
     fn check_worktree_is_clean(&self) -> bool {
@@ -89,7 +89,7 @@ impl GitSync {
         remote.fetch(&["HEAD"], Some(&mut fetch_options), None)?;
 
         let mut fetch_head = repository.find_reference("FETCH_HEAD")?;
-        let fetch_commit = repository.reference_to_annotated_commit(&&fetch_head)?;
+        let fetch_commit = repository.reference_to_annotated_commit(&fetch_head)?;
         let analysis = repository.merge_analysis(&[&fetch_commit])?;
 
         if analysis.0.is_up_to_date() {
@@ -120,7 +120,7 @@ impl GitSync {
                 .force(),
         ))?;
 
-        return Ok(());
+        Ok(())
     }
 
     fn clone_repository(&self) -> Result<(), errors::GitSyncError> {
@@ -167,7 +167,7 @@ impl GitSync {
 
     fn does_clone_exist(&self) -> Result<bool, errors::GitSyncError> {
         // No local directory exists, so we can happily clone when required.
-        if false == Path::new(&self.dir).exists() {
+        if !Path::new(&self.dir).exists() {
             return Ok(false);
         };
 

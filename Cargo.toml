@@ -1,6 +1,6 @@
 [package]
 name = "gitsync"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["David McKay <david@rawkode.com>"]
 edition = "2018"
 license = "MIT"
@@ -8,17 +8,17 @@ description = "Library that facilitates monitoring Git repositories for changes.
 repository = "https://github.com/rawkode/gitsync"
 
 [dependencies]
-actix = "0.10.0-alpha.3"
-chrono = "0.4.13"
-env_logger = "0.7.1"
+actix = "0.13"
+chrono = "0.4"
+env_logger = "0.10"
 futures = "0.3"
-git2 = "0.13.8"
-log = "0.4.0"
-tempdir = "0.3.7"
+git2 = "0.15"
+log = "0.4"
+tempdir = "0.3"
 
 [dev-dependencies]
-async-trait = "0.1.41"
-cucumber_rust = { version = "0.8.4", features = ["macros"] }
+async-trait = "0.1"
+cucumber = { version = "0.19" }
 futures = { version = "0.3" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 

@@ -1,9 +1,9 @@
-use cucumber_rust::{given, then, when};
+use cucumber::{given, then, when};
 
-use crate::MyWorld;
+use crate::World;
 
 #[given("there are remote changes")]
-fn remote_changes(world: &mut MyWorld) {
+fn remote_changes(world: &mut World) {
     let output = std::process::Command::new("git")
         .current_dir(&world.clone_dir)
         .arg("rev-parse")
@@ -30,7 +30,7 @@ fn remote_changes(world: &mut MyWorld) {
 }
 
 #[given("there are no remote changes")]
-fn no_remote_changes(world: &mut MyWorld) {
+fn no_remote_changes(world: &mut World) {
     let output = std::process::Command::new("git")
         .current_dir(&world.clone_dir)
         .arg("rev-parse")
@@ -42,7 +42,7 @@ fn no_remote_changes(world: &mut MyWorld) {
 }
 
 #[when("I sync")]
-fn sync(world: &mut MyWorld) {
+fn sync(world: &mut World) {
     let gitsync = gitsync::GitSync {
         repo: world.repo_url.clone(),
         dir: world.clone_dir.clone(),
@@ -58,7 +58,7 @@ fn sync(world: &mut MyWorld) {
 }
 
 #[then("there is no change")]
-fn there_is_no_change(world: &mut MyWorld) {
+fn there_is_no_change(world: &mut World) {
     let output = std::process::Command::new("git")
         .current_dir(&world.clone_dir)
         .arg("rev-parse")
@@ -70,7 +70,7 @@ fn there_is_no_change(world: &mut MyWorld) {
 }
 
 #[then("there are changes")]
-fn there_are_changes(world: &mut MyWorld) {
+fn there_are_changes(world: &mut World) {
     let output = std::process::Command::new("git")
         .current_dir(&world.clone_dir)
         .arg("rev-parse")
@@ -83,7 +83,7 @@ fn there_are_changes(world: &mut MyWorld) {
 }
 
 #[then("the sync completes")]
-fn the_sync_completes(world: &mut MyWorld) {
+fn the_sync_completes(world: &mut World) {
     println!("Bare Repository {:?}", world.bare_dir);
     println!("Clone Repository {:?}", world.clone_dir);
     println!("{:?}", world.sync_error);
@@ -91,13 +91,13 @@ fn the_sync_completes(world: &mut MyWorld) {
 }
 
 #[then("the sync errors")]
-fn the_sync_errors(world: &mut MyWorld) {
+fn the_sync_errors(world: &mut World) {
     println!("Clone is {:?}", world.bare_dir);
-    assert_eq!(true, world.sync_error.is_some());
+    assert!(world.sync_error.is_some());
 }
 
 #[given("there are local changes")]
-fn there_is_local_changes(world: &mut MyWorld) {
+fn there_is_local_changes(world: &mut World) {
     let output = std::process::Command::new("git")
         .current_dir(&world.clone_dir)
         .arg("rev-parse")
