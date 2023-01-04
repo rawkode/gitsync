@@ -11,6 +11,9 @@ pub enum GitSyncError {
     Git2Error {
         error: git2::Error,
     },
+    GenericError {
+        error: std::io::Error,
+    },
 }
 
 impl fmt::Debug for GitSyncError {
@@ -35,6 +38,10 @@ impl fmt::Debug for GitSyncError {
 
             GitSyncError::Git2Error { error } => {
                 write!(f, "There was an error reported by git2-rs: {}", error)
+            }
+
+            GitSyncError::GenericError { error } => {
+                write!(f, "There was an IO error: {}", error)
             }
         }
     }

@@ -126,6 +126,15 @@ impl GitSync {
     fn clone_repository(&self) -> Result<(), errors::GitSyncError> {
         info!("Attempting to clone {} to {:?}", self.repo, self.dir,);
 
+        if !self.dir.exists() {
+            match std::fs::create_dir_all(&self.dir) {
+                Ok(_) => {}
+                Err(e) => {
+                    return Err(GitSyncError::GenericError { error: e });
+                }
+            }
+        }
+
         let mut fetch_options = git2::FetchOptions::new();
         let mut builder = RepoBuilder::new();
 
