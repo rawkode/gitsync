@@ -8,18 +8,13 @@ description = "Library that facilitates monitoring Git repositories for changes.
 repository = "https://github.com/rawkode/gitsync"
 
 [dependencies]
-actix = "0.13"
-chrono = "0.4"
-env_logger = "0.10"
-futures = "0.3"
 git2 = "0.16"
 log = "0.4"
-tempdir = "0.3"
 
 [dev-dependencies]
 async-trait = "0.1"
 cucumber = { version = "0.19" }
-futures = { version = "0.3" }
+tempfile = "3.4"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [[test]]

@@ -4,8 +4,6 @@ use git2::{Cred, RemoteCallbacks};
 use git2::{Repository, StatusOptions};
 use std::path::{Path, PathBuf};
 
-// #[cfg(feature = "actix")]
-// pub mod actix;
 pub mod errors;
 
 // When running tests, we can just use println instead of logger
