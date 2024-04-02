@@ -6,6 +6,9 @@ env:
     CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
     #https://github.com/rust-lang/cargo/issues/10303
     CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+    # To support OpenSSL on Ubuntu 22, we need git2-rs to
+    # use the vendored libgit2; because Ubuntu's is too old.
+    CARGO_FEATURE_VENDORED: "true"
 
 on:
     push:
