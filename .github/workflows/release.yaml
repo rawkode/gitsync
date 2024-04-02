@@ -2,7 +2,7 @@
 name: release
 
 env:
-    MIN_SUPPORTED_RUST_VERSION: "1.45.0"
+    MIN_SUPPORTED_RUST_VERSION: "1.75.0"
     CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
     #https://github.com/rust-lang/cargo/issues/10303
     CARGO_NET_GIT_FETCH_WITH_CLI: "true"
