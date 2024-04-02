@@ -11,7 +11,7 @@ fn remote_changes(world: &mut World) {
         .output()
         .expect("Failed to get current commit hash");
 
-    world.latest_commit_hash = output.stdout;
+    world.latest_commit_hash = String::from_utf8(output.stdout).unwrap();
 
     std::process::Command::new("git")
         .current_dir(&world.clone_dir)
@@ -26,7 +26,7 @@ fn remote_changes(world: &mut World) {
         .output()
         .expect("Failed to get current commit hash");
 
-    world.current_commit_hash = output.stdout;
+    world.current_commit_hash = String::from_utf8(output.stdout).unwrap();
 }
 
 #[given("there are no remote changes")]
@@ -38,7 +38,7 @@ fn no_remote_changes(world: &mut World) {
         .output()
         .expect("Failed to get current commit hash");
 
-    world.current_commit_hash = output.stdout;
+    world.current_commit_hash = String::from_utf8(output.stdout).unwrap();
 }
 
 #[when("I sync")]
@@ -66,7 +66,7 @@ fn there_is_no_change(world: &mut World) {
         .output()
         .expect("Failed to get current commit hash");
 
-    assert_eq!(world.current_commit_hash, output.stdout);
+    assert_eq!(world.current_commit_hash, String::from_utf8(output.stdout).unwrap());
 }
 
 #[then("there are changes")]
@@ -79,7 +79,7 @@ fn there_are_changes(world: &mut World) {
         .expect("Failed to get current commit hash");
 
     assert_ne!(world.latest_commit_hash, world.current_commit_hash);
-    assert_eq!(world.latest_commit_hash, output.stdout);
+    assert_eq!(world.latest_commit_hash, String::from_utf8(output.stdout).unwrap());
 }
 
 #[then("the sync completes")]
@@ -105,7 +105,7 @@ fn there_is_local_changes(world: &mut World) {
         .output()
         .expect("Failed to get current commit hash");
 
-    world.current_commit_hash = output.stdout;
+    world.current_commit_hash = String::from_utf8(output.stdout).unwrap();
 
     // Modify the file, we don't need to commit
     std::fs::write(world.clone_dir.join("file"), "123")

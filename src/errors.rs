@@ -8,8 +8,21 @@ pub enum GitSyncError {
     },
     WorkTreeNotClean,
     FastForwardMergeNotPossible,
-    Git2Error {
-        error: git2::Error,
+
+    GixOpenError {
+        error: gix::open::Error,
+    },
+    GixParseError {
+        error: gix::url::parse::Error,
+    },
+    GixCloneError {
+        error: gix::clone::Error,
+    },
+    GixCloneFetchError {
+        error: gix::clone::fetch::Error,
+    },
+    GixCloneCheckoutError {
+        error: gix::clone::checkout::main_worktree::Error,
     },
     GenericError {
         error: std::io::Error,
@@ -36,19 +49,33 @@ impl fmt::Debug for GitSyncError {
                 write!(f, "The worktree isn't clean. Refusing to sync")
             }
 
-            GitSyncError::Git2Error { error } => {
-                write!(f, "There was an error reported by git2-rs: {}", error)
+            GitSyncError::GixOpenError { error } => {
+                write!(
+                    f,
+                    "There was an error opening the Git repository: {}",
+                    error
+                )
+            }
+
+            GitSyncError::GixParseError { error } => {
+                write!(f, "There was an error parsing the URL: {}", error)
+            }
+
+            GitSyncError::GixCloneError { error } => {
+                write!(f, "There was an error cloning the repository: {}", error)
+            }
+
+            GitSyncError::GixCloneFetchError { error } => {
+                write!(f, "There was an error fetching the repository: {}", error)
+            }
+
+            GitSyncError::GixCloneCheckoutError { error } => {
+                write!(f, "There was an error checking out the repository: {}", error)
             }
 
             GitSyncError::GenericError { error } => {
                 write!(f, "There was an IO error: {}", error)
             }
         }
-    }
-}
-
-impl From<git2::Error> for GitSyncError {
-    fn from(error: git2::Error) -> Self {
-        GitSyncError::Git2Error { error }
     }
 }

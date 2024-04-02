@@ -106,8 +106,8 @@ fn repository_is_cloned(world: &mut World) {
         .expect("Failed to get Url for origin remote");
 
     assert_eq!(
-        format!("{}\n", repo_url).as_bytes(),
-        output.stdout.as_slice()
+        format!("{}\n", repo_url),
+        String::from_utf8(output.stdout).unwrap(),
     );
 }
 
@@ -138,7 +138,7 @@ fn bootstrap_errors_because(world: &mut World, error: String) {
 
     match error.as_ref() {
         "local dir isn't git repository" => {
-            assert!(matches!(w, errors::GitSyncError::Git2Error { .. }))
+            assert!(matches!(w, errors::GitSyncError::GixOpenError { .. }))
         }
         "incorrect remote" => {
             assert!(matches!(
