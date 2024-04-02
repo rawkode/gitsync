@@ -4,9 +4,6 @@ env:
     MIN_SUPPORTED_RUST_VERSION: "1.75.0"
     #https://github.com/rust-lang/cargo/issues/10303
     CARGO_NET_GIT_FETCH_WITH_CLI: "true"
-    # To support OpenSSL on Ubuntu 22, we need git2-rs to
-    # use the vendored libgit2; because Ubuntu's is too old.
-    CARGO_FEATURE_VENDORED: "true"
 
 on:
     pull_request:
@@ -19,7 +16,7 @@ on:
 
 jobs:
     lint:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-20.04
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -63,7 +60,7 @@ jobs:
             fail-fast: false
             matrix:
                 job:
-                    - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+                    - { os: ubuntu-20.04, target: x86_64-unknown-linux-gnu }
                     - { os: macos-latest, target: x86_64-apple-darwin }
                     - { os: windows-latest, target: x86_64-pc-windows-gnu }
         steps:
