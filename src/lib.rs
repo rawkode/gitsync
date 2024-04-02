@@ -1,7 +1,5 @@
 use errors::GitSyncError;
-use git2::build::RepoBuilder;
-use git2::{Cred, RemoteCallbacks};
-use git2::{Repository, StatusOptions};
+use gix::clone::PrepareCheckout;
 use std::path::{Path, PathBuf};
 
 pub mod errors;
@@ -36,23 +34,7 @@ impl GitSync {
     }
 
     fn check_worktree_is_clean(&self) -> bool {
-        let mut opts = StatusOptions::new();
-        opts.include_ignored(false);
-        opts.include_untracked(true);
-
-        let repository = match Repository::open(self.dir.clone()) {
-            Ok(repository) => repository,
-            Err(_) => {
-                return false;
-            }
-        };
-
-        let clean = match repository.statuses(Some(&mut opts)) {
-            Ok(status) => status.is_empty(),
-            Err(_) => false,
-        };
-
-        clean
+        true
     }
 
     pub fn sync(&self) -> Result<(), errors::GitSyncError> {
@@ -60,105 +42,61 @@ impl GitSync {
             return Err(GitSyncError::WorkTreeNotClean);
         }
 
-        let mut fetch_options = git2::FetchOptions::new();
-
-        if self.private_key.is_some() {
-            let mut callbacks = RemoteCallbacks::new();
-
-            callbacks.credentials(|_url, username_from_url, _allowed_types| {
-                let username = match &self.username {
-                    Some(u) => u,
-                    _ => username_from_url.unwrap(),
-                };
-
-                Cred::ssh_key(
-                    username,
-                    None,
-                    std::path::Path::new(&self.private_key.clone().unwrap()),
-                    self.passphrase.as_deref(),
-                )
-            });
-
-            fetch_options.remote_callbacks(callbacks);
-        }
-
-        let repository: Repository = Repository::open(&self.dir)?;
-        let mut remote = repository.find_remote("origin")?;
-        remote.fetch(&["HEAD"], Some(&mut fetch_options), None)?;
-
-        let mut fetch_head = repository.find_reference("FETCH_HEAD")?;
-        let fetch_commit = repository.reference_to_annotated_commit(&fetch_head)?;
-        let analysis = repository.merge_analysis(&[&fetch_commit])?;
-
-        if analysis.0.is_up_to_date() {
-            return Ok(());
-        }
-
-        // We only support fast forward merges for now
-        if !analysis.0.is_fast_forward() {
-            return Err(GitSyncError::FastForwardMergeNotPossible);
-        }
-
-        let name = match fetch_head.name() {
-            Some(s) => s.to_string(),
-            None => String::from_utf8_lossy(fetch_head.name_bytes()).to_string(),
-        };
-
-        fetch_head.set_target(
-            fetch_commit.id(),
-            format!("fast-forward from {} to {}", name, fetch_commit.id()).as_str(),
-        )?;
-
-        repository.set_head(&name)?;
-        repository.checkout_head(Some(
-            git2::build::CheckoutBuilder::default()
-                // For some reason the force is required to make the working directory actually get updated
-                // I suspect we should be adding some logic to handle dirty working directory states
-                // but this is just an example so maybe not.
-                .force(),
-        ))?;
-
-        Ok(())
+        self.clone_repository()
     }
 
     fn clone_repository(&self) -> Result<(), errors::GitSyncError> {
         info!("Attempting to clone {} to {:?}", self.repo, self.dir,);
 
+        unsafe {
+            match gix::interrupt::init_handler(1, || {}) {
+                Ok(_) => (),
+                Err(error) => {
+                    return Err(GitSyncError::GenericError { error });
+                }
+            };
+        }
+
         if !self.dir.exists() {
             match std::fs::create_dir_all(&self.dir) {
                 Ok(_) => {}
-                Err(e) => {
-                    return Err(GitSyncError::GenericError { error: e });
+                Err(error) => {
+                    return Err(GitSyncError::GenericError { error });
                 }
             }
         }
 
-        let mut fetch_options = git2::FetchOptions::new();
-        let mut builder = RepoBuilder::new();
+        let url = match gix::url::parse(self.repo.as_str().into()) {
+            Ok(url) => url,
+            Err(error) => {
+                return Err(GitSyncError::GixParseError { error });
+            }
+        };
 
-        if self.private_key.is_some() {
-            let mut callbacks = RemoteCallbacks::new();
+        let mut prepare_clone = match gix::prepare_clone(url, &self.dir) {
+            Ok(prepared_fetch) => prepared_fetch,
+            Err(error) => {
+                return Err(GitSyncError::GixCloneError { error });
+            }
+        };
 
-            callbacks.credentials(|_url, username_from_url, _allowed_types| {
-                let username = match &self.username {
-                    Some(u) => u,
-                    _ => username_from_url.unwrap(),
-                };
+        let (mut prepare_checkout, _) = match prepare_clone
+            .fetch_then_checkout(gix::progress::Discard, &gix::interrupt::IS_INTERRUPTED)
+        {
+            Ok(checkout) => checkout,
+            Err(error) => {
+                return Err(GitSyncError::GixCloneFetchError { error });
+            }
+        };
 
-                Cred::ssh_key(
-                    username,
-                    None,
-                    std::path::Path::new(&self.private_key.clone().unwrap()),
-                    self.passphrase.as_deref(),
-                )
-            });
-
-            fetch_options.remote_callbacks(callbacks);
-        }
-
-        builder.fetch_options(fetch_options);
-
-        builder.clone(self.repo.as_str(), Path::new(&self.dir))?;
+        match prepare_checkout
+            .main_worktree(gix::progress::Discard, &gix::interrupt::IS_INTERRUPTED)
+        {
+            Ok(repository) => repository,
+            Err(error) => {
+                return Err(GitSyncError::GixCloneCheckoutError { error });
+            }
+        };
 
         Ok(())
     }
@@ -171,7 +109,11 @@ impl GitSync {
 
         // OK. If a directory exists, we need to check if it's a Git repository
         // and if the remotes match what we expect.
-        let repository = Repository::open(&self.dir)?;
+        let repository = match gix::open(&self.dir) {
+            Ok(repository) => repository,
+            Err(gixerror) => return Err(errors::GitSyncError::GixOpenError { error: gixerror }),
+        };
+
         let remote = match repository.find_remote("origin") {
             Ok(remote) => remote,
             Err(_) => {
@@ -183,7 +125,7 @@ impl GitSync {
             }
         };
 
-        let remote_url = match remote.url() {
+        let remote_url = match remote.url(gix::remote::Direction::Fetch) {
             None => {
                 return Err(errors::GitSyncError::IncorrectGitRemotes {
                     dir: self.dir.clone(),
@@ -191,10 +133,10 @@ impl GitSync {
                     expected: self.repo.clone(),
                 })
             }
-            Some(url) => url,
+            Some(url) => url.to_string(),
         };
 
-        if remote_url.ne(self.repo.as_str()) {
+        if remote_url.ne(&self.repo) {
             return Err(errors::GitSyncError::IncorrectGitRemotes {
                 dir: self.dir.clone(),
                 actual: String::from(""),

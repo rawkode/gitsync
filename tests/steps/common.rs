@@ -6,7 +6,7 @@ use crate::World;
 
 #[given("I have a remote Git repository available")]
 fn i_have_a_remote_git_repository(world: &mut World) {
-    let path = TempDir::new().unwrap().into_path();
+    let path = TempDir::new().unwrap().into_path().canonicalize().unwrap();
 
     world.test_dir = path;
     world.bare_dir = PathBuf::from(&world.test_dir).join("bare");

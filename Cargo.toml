@@ -8,7 +8,7 @@ description = "Library that facilitates monitoring Git repositories for changes.
 repository = "https://github.com/rawkode/gitsync"
 
 [dependencies]
-git2 = "0.18"
+gix = { version = "0.61.0", features = ["blocking-network-client"] }
 log = "0.4"
 
 [dev-dependencies]

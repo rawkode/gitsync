@@ -10,8 +10,8 @@ pub struct World {
     bare_dir: PathBuf,
     clone_dir: PathBuf,
     repo_url: String,
-    latest_commit_hash: Vec<u8>,
-    current_commit_hash: Vec<u8>,
+    latest_commit_hash: String,
+    current_commit_hash: String,
     sync_error: Option<errors::GitSyncError>,
     created_files: Vec<String>,
 }
