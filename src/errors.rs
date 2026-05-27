@@ -58,15 +58,15 @@ impl fmt::Display for GitSyncError {
             }
 
             GitSyncError::GixError { error } => {
-                write!(f, "There was an error reported by gix: {}", error)
+                write!(f, "There was an error reported by gix: {error}")
             }
 
             GitSyncError::GitCommandError { command, stderr } => {
-                write!(f, "Git command `{}` failed: {}", command, stderr)
+                write!(f, "Git command `{command}` failed: {stderr}")
             }
 
             GitSyncError::GenericError { error } => {
-                write!(f, "There was an IO error: {}", error)
+                write!(f, "There was an IO error: {error}")
             }
         }
     }

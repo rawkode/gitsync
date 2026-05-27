@@ -115,10 +115,7 @@ fn repository_is_cloned(world: &mut World) {
         .output()
         .expect("Failed to get Url for origin remote");
 
-    assert_eq!(
-        format!("{}\n", repo_url).as_bytes(),
-        output.stdout.as_slice()
-    );
+    assert_eq!(format!("{repo_url}\n").as_bytes(), output.stdout.as_slice());
 }
 
 #[then("the directory is left untouched")]
@@ -144,7 +141,7 @@ fn checked_out_branch_is(world: &mut World, branch: String) {
         .expect("Failed to get checked out branch");
 
     assert!(output.status.success());
-    assert_eq!(format!("{}\n", branch).as_bytes(), output.stdout.as_slice());
+    assert_eq!(format!("{branch}\n").as_bytes(), output.stdout.as_slice());
 }
 
 #[then("the bootstrap errors")]

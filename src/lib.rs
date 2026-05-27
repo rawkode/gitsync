@@ -98,9 +98,18 @@ impl GitSync {
 
     pub fn sync(&self) -> Result<SyncOutcome, errors::GitSyncError> {
         self.ensure_worktree_is_clean()?;
-        let repository = gix::open(&self.dir).map_err(GitSyncError::from_gix)?;
+        let mut repository = gix::open(&self.dir).map_err(GitSyncError::from_gix)?;
+
+        // Fetching and fast-forwarding write reflog entries, which gix refuses
+        // to do without a committer identity. A GitOps consumer often runs with
+        // no `user.name`/`user.email` configured, so fall back to a generic
+        // committer (the same approach gix itself uses when cloning).
+        repository
+            .committer_or_set_generic_fallback()
+            .map_err(GitSyncError::from_gix)?;
+
         let branch = self.sync_branch(&repository)?;
-        let branch_reference = format!("refs/heads/{}", branch);
+        let branch_reference = format!("refs/heads/{branch}");
 
         let mut local_reference = repository
             .try_find_reference(branch_reference.as_str())
@@ -117,7 +126,7 @@ impl GitSync {
 
         self.fetch(&repository)?;
 
-        let remote_reference = format!("refs/remotes/origin/{}", branch);
+        let remote_reference = format!("refs/remotes/origin/{branch}");
         let mut remote_reference = repository
             .find_reference(remote_reference.as_str())
             .map_err(GitSyncError::from_gix)?;
@@ -147,7 +156,7 @@ impl GitSync {
                 reference
                     .set_target_id(
                         remote_id,
-                        format!("fast-forward {} to {}", branch_reference, remote_id),
+                        format!("fast-forward {branch_reference} to {remote_id}"),
                     )
                     .map_err(GitSyncError::from_gix)?;
             }
@@ -157,7 +166,7 @@ impl GitSync {
                         branch_reference.as_str(),
                         remote_id,
                         PreviousValue::MustNotExist,
-                        format!("create {} at {}", branch_reference, remote_id),
+                        format!("create {branch_reference} at {remote_id}"),
                     )
                     .map_err(GitSyncError::from_gix)?;
             }

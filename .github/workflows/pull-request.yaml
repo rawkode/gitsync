@@ -1,7 +1,7 @@
 name: pull-request
 
 env:
-    MIN_SUPPORTED_RUST_VERSION: "1.75.0"
+    MIN_SUPPORTED_RUST_VERSION: "1.88.0"
     #https://github.com/rust-lang/cargo/issues/10303
     CARGO_NET_GIT_FETCH_WITH_CLI: "true"
 

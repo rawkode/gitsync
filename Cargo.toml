@@ -3,6 +3,7 @@ name = "gitsync"
 version = "0.2.0"
 authors = ["David McKay <david@rawkode.com>"]
 edition = "2018"
+rust-version = "1.88"
 license = "MIT"
 description = "Library that facilitates monitoring Git repositories for changes. Could enable GitOps"
 repository = "https://github.com/rawkode/gitsync"
