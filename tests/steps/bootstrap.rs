@@ -88,6 +88,21 @@ fn bootstrap_git_repository(world: &mut World) {
     world.sync_error = gitsync.bootstrap().err();
 }
 
+#[when(regex = r#"I bootstrap branch "(\S+)""#)]
+fn bootstrap_git_repository_branch(world: &mut World, branch: String) {
+    world.repo_url = String::from(world.bare_dir.to_str().unwrap());
+    world.branch = Some(branch.clone());
+
+    let gitsync = gitsync::GitSync {
+        repo: String::from(world.bare_dir.clone().to_str().unwrap()),
+        dir: world.clone_dir.clone(),
+        branch: Some(branch),
+        ..Default::default()
+    };
+
+    world.sync_error = gitsync.bootstrap().err();
+}
+
 #[then(regex = r#"the repository is cloned"#)]
 fn repository_is_cloned(world: &mut World) {
     let repo_url: &str = world.repo_url.as_str();
@@ -118,6 +133,18 @@ fn directory_left_untouched(world: &mut World) {
 #[then("the bootstrap completes")]
 fn bootstrap_is_ok(world: &mut World) {
     assert!(world.sync_error.is_none());
+}
+
+#[then(regex = r#"the checked out branch is "(\S+)""#)]
+fn checked_out_branch_is(world: &mut World, branch: String) {
+    let output = std::process::Command::new("git")
+        .current_dir(&world.clone_dir)
+        .args(vec!["branch", "--show-current"])
+        .output()
+        .expect("Failed to get checked out branch");
+
+    assert!(output.status.success());
+    assert_eq!(format!("{}\n", branch).as_bytes(), output.stdout.as_slice());
 }
 
 #[then("the bootstrap errors")]

@@ -1,6 +1,6 @@
 [package]
 name = "gitsync"
-version = "0.1.9"
+version = "0.2.0"
 authors = ["David McKay <david@rawkode.com>"]
 edition = "2018"
 license = "MIT"
@@ -8,7 +8,7 @@ description = "Library that facilitates monitoring Git repositories for changes.
 repository = "https://github.com/rawkode/gitsync"
 
 [dependencies]
-gix = { version = "0.84", features = ["blocking-network-client"] }
+gix = { version = "0.84", features = ["blocking-http-transport-reqwest-rust-tls", "blocking-network-client"] }
 log = "0.4"
 
 [dev-dependencies]

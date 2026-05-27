@@ -23,6 +23,7 @@ fn i_have_a_remote_git_repository(world: &mut World) {
 
     // We want this Git repository to have at-least one commit
     let path = world.bare_dir.parent().unwrap().join("initial-commits");
+    world.source_dir = path.clone();
 
     let output = std::process::Command::new("git")
         .args(vec![
@@ -93,6 +94,41 @@ fn i_have_a_remote_git_repository(world: &mut World) {
     assert!(output.status.success());
 
     world.repo_url = String::from(world.bare_dir.to_str().unwrap());
+}
+
+#[given(regex = r#"the remote has a branch called "(\S+)""#)]
+fn the_remote_has_a_branch(world: &mut World, branch: String) {
+    let output = std::process::Command::new("git")
+        .current_dir(&world.source_dir)
+        .args(vec!["checkout", "-B", &branch])
+        .output()
+        .expect("Failed to create branch");
+    assert!(output.status.success());
+
+    std::fs::write(world.source_dir.join("branch-file"), "1").expect("Failed to write branch file");
+
+    let output = std::process::Command::new("git")
+        .current_dir(&world.source_dir)
+        .args(vec!["add", "branch-file"])
+        .output()
+        .expect("Failed to add branch file");
+    assert!(output.status.success());
+
+    let output = std::process::Command::new("git")
+        .current_dir(&world.source_dir)
+        .args(vec!["commit", "-m", "branch commit"])
+        .output()
+        .expect("Failed to commit branch file");
+    assert!(output.status.success());
+
+    let output = std::process::Command::new("git")
+        .current_dir(&world.source_dir)
+        .args(vec!["push", "-u", "origin", &branch])
+        .output()
+        .expect("Failed to push branch");
+    assert!(output.status.success());
+
+    world.branch = Some(branch);
 }
 
 #[given(regex = r#"I have a Git repository in a directory called "(\S+)""#)]
