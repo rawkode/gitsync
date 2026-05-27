@@ -84,6 +84,9 @@ jobs:
                   skip-version-file: "true"
                   skip-commit: "true"
                   skip-tag: "true"
+                  # Our version tags have no "v" prefix (e.g. 0.2.1), so the
+                  # action must not assume the default "v" prefix.
+                  tag-prefix: ""
                   # The tag push checks out a detached HEAD, so the action's
                   # `git pull --ff-only` fails ("not currently on a branch").
                   # We already have full history (fetch-depth: 0) and only need
