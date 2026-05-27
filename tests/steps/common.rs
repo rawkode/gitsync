@@ -6,7 +6,7 @@ use crate::World;
 
 #[given("I have a remote Git repository available")]
 fn i_have_a_remote_git_repository(world: &mut World) {
-    let path = TempDir::new().unwrap().into_path();
+    let path = TempDir::new().unwrap().keep();
 
     world.test_dir = path;
     world.bare_dir = PathBuf::from(&world.test_dir).join("bare");
@@ -87,7 +87,7 @@ fn i_have_a_remote_git_repository(world: &mut World) {
 
     let output = std::process::Command::new("git")
         .current_dir(&path)
-        .args(vec!["push", "-u", "origin", "master"])
+        .args(vec!["push", "-u", "origin", "HEAD"])
         .output()
         .expect("Failed to push changes");
     assert!(output.status.success());

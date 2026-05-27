@@ -49,12 +49,7 @@ fn sync(world: &mut World) {
         ..Default::default()
     };
 
-    let sync_error = match gitsync.sync() {
-        Ok(_) => None,
-        Err(e) => Some(e),
-    };
-
-    world.sync_error = sync_error;
+    world.sync_error = gitsync.sync().err();
 }
 
 #[then("there is no change")]

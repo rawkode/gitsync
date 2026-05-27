@@ -14,12 +14,15 @@ on:
         tags:
             - "*"
 
+permissions:
+    contents: read
+
 jobs:
     lint:
-        runs-on: ubuntu-20.04
+        runs-on: ubuntu-latest
         steps:
             - name: Git checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
             - name: Install rust toolchain (v${{ env.MIN_SUPPORTED_RUST_VERSION }})
               uses: moonrepo/setup-rust@v1
               with:
@@ -34,7 +37,7 @@ jobs:
               run: cargo tarpaulin --out Xml --all-features
 
             - name: Upload to codecov.io
-              uses: codecov/codecov-action@v1.0.2
+              uses: codecov/codecov-action@v6
               with:
                   token: ${{secrets.CODECOV_TOKEN}}
 
@@ -45,12 +48,12 @@ jobs:
             fail-fast: false
             matrix:
                 job:
-                    - { os: ubuntu-20.04, target: x86_64-unknown-linux-gnu }
+                    - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
                     - { os: macos-latest, target: x86_64-apple-darwin }
                     - { os: windows-latest, target: x86_64-pc-windows-gnu }
         steps:
             - name: Checkout source code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Install Rust toolchain
               uses: moonrepo/setup-rust@v1
@@ -63,20 +66,27 @@ jobs:
 
     release:
         if: startsWith(github.ref, 'refs/tags/')
-        runs-on: ubuntu-20.04
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
 
             - name: Conventional Changelog Action
               id: changelog
-              uses: TriPSs/conventional-changelog-action@v3
+              uses: TriPSs/conventional-changelog-action@v6
               with:
-                  github-token: ${{ secrets.github_token }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
                   output-file: "false"
+                  skip-version-file: "true"
+                  skip-commit: "true"
+                  skip-tag: "true"
 
             - name: Update Release with Changelog
-              uses: softprops/action-gh-release@v1
+              uses: softprops/action-gh-release@v3
               with:
                   body: |
                       ${{steps.changelog.outputs.clean_changelog}}

@@ -1,22 +1,30 @@
-use std::{fmt, path::PathBuf};
+use std::{error::Error, fmt, path::PathBuf};
 
+#[derive(Debug)]
 pub enum GitSyncError {
     IncorrectGitRemotes {
         dir: PathBuf,
         expected: String,
         actual: String,
     },
+    CurrentBranchUnknown {
+        dir: PathBuf,
+    },
     WorkTreeNotClean,
     FastForwardMergeNotPossible,
-    Git2Error {
-        error: git2::Error,
+    GixError {
+        error: Box<dyn Error + Send + Sync>,
+    },
+    GitCommandError {
+        command: String,
+        stderr: String,
     },
     GenericError {
         error: std::io::Error,
     },
 }
 
-impl fmt::Debug for GitSyncError {
+impl fmt::Display for GitSyncError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             GitSyncError::IncorrectGitRemotes {
@@ -24,8 +32,21 @@ impl fmt::Debug for GitSyncError {
                 expected,
                 actual,
             } => {
-                write!(f, "A directory already exists at {} and is a Git repository, but we expected the remote to be {} and got {}.",
-                dir.to_str().unwrap(), expected, actual)
+                write!(
+                    f,
+                    "A directory already exists at {} and is a Git repository, but we expected the remote to be {} and got {}.",
+                    dir.display(),
+                    expected,
+                    actual
+                )
+            }
+
+            GitSyncError::CurrentBranchUnknown { dir } => {
+                write!(
+                    f,
+                    "The repository at {} is not on a named branch. Set GitSync::branch before syncing.",
+                    dir.display()
+                )
             }
 
             GitSyncError::FastForwardMergeNotPossible => {
@@ -36,8 +57,12 @@ impl fmt::Debug for GitSyncError {
                 write!(f, "The worktree isn't clean. Refusing to sync")
             }
 
-            GitSyncError::Git2Error { error } => {
-                write!(f, "There was an error reported by git2-rs: {}", error)
+            GitSyncError::GixError { error } => {
+                write!(f, "There was an error reported by gix: {}", error)
+            }
+
+            GitSyncError::GitCommandError { command, stderr } => {
+                write!(f, "Git command `{}` failed: {}", command, stderr)
             }
 
             GitSyncError::GenericError { error } => {
@@ -47,8 +72,21 @@ impl fmt::Debug for GitSyncError {
     }
 }
 
-impl From<git2::Error> for GitSyncError {
-    fn from(error: git2::Error) -> Self {
-        GitSyncError::Git2Error { error }
+impl Error for GitSyncError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            GitSyncError::GixError { error } => Some(error.as_ref()),
+            GitSyncError::GenericError { error } => Some(error),
+            GitSyncError::GitCommandError { .. } => None,
+            _ => None,
+        }
+    }
+}
+
+impl GitSyncError {
+    pub fn from_gix(error: impl Error + Send + Sync + 'static) -> Self {
+        GitSyncError::GixError {
+            error: Box::new(error),
+        }
     }
 }

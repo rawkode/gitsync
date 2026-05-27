@@ -85,12 +85,7 @@ fn bootstrap_git_repository(world: &mut World) {
         ..Default::default()
     };
 
-    let sync_error = match gitsync.bootstrap() {
-        Ok(_) => None,
-        Err(e) => Some(e),
-    };
-
-    world.sync_error = sync_error;
+    world.sync_error = gitsync.bootstrap().err();
 }
 
 #[then(regex = r#"the repository is cloned"#)]
@@ -138,7 +133,7 @@ fn bootstrap_errors_because(world: &mut World, error: String) {
 
     match error.as_ref() {
         "local dir isn't git repository" => {
-            assert!(matches!(w, errors::GitSyncError::Git2Error { .. }))
+            assert!(matches!(w, errors::GitSyncError::GixError { .. }))
         }
         "incorrect remote" => {
             assert!(matches!(

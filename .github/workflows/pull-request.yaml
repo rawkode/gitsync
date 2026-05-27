@@ -16,10 +16,10 @@ on:
 
 jobs:
     lint:
-        runs-on: ubuntu-20.04
+        runs-on: ubuntu-latest
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: check-for-cc
               id: check-for-cc
@@ -33,11 +33,12 @@ jobs:
               with:
                   channel: stable
                   components: clippy,rustfmt
+                  bins: cargo-tarpaulin
 
             - name: Run cargo fmt
               run: cargo fmt --all -- --check
 
-            - uses: EmbarkStudios/cargo-deny-action@v1
+            - uses: EmbarkStudios/cargo-deny-action@v2
               with:
                   log-level: warn
                   command: check
@@ -49,7 +50,7 @@ jobs:
               run: cargo tarpaulin --out Xml --all --exclude-files tests/*
 
             - name: Upload to codecov.io
-              uses: codecov/codecov-action@v1.0.2
+              uses: codecov/codecov-action@v6
               with:
                   token: ${{secrets.CODECOV_TOKEN}}
 
@@ -60,12 +61,12 @@ jobs:
             fail-fast: false
             matrix:
                 job:
-                    - { os: ubuntu-20.04, target: x86_64-unknown-linux-gnu }
+                    - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
                     - { os: macos-latest, target: x86_64-apple-darwin }
                     - { os: windows-latest, target: x86_64-pc-windows-gnu }
         steps:
             - name: Checkout source code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Extract crate information
               shell: bash
@@ -88,8 +89,7 @@ jobs:
                   # test only library unit tests and binary for arm-type targets
                   unset CARGO_TEST_OPTIONS
                   unset CARGO_TEST_OPTIONS ; case ${{ matrix.job.target }} in arm-* | aarch64-*) CARGO_TEST_OPTIONS="--lib --bin ${PROJECT_NAME}" ;; esac;
-                  echo ::set-output name=CARGO_TEST_OPTIONS::${CARGO_TEST_OPTIONS}
+                  echo "CARGO_TEST_OPTIONS=${CARGO_TEST_OPTIONS}" >> "$GITHUB_OUTPUT"
 
             - name: Run tests
               run: cargo test --target ${{ matrix.job.target }} ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
-              continue-on-error: true
